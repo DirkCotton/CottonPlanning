@@ -29,7 +29,7 @@ annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store 
 
 for (i in 1:scenarios) {
   
-  if(i == 20) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
+  if(i == 33) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
   
   if (debug == 1) {
     print(" ")
@@ -137,9 +137,10 @@ for (scenarioYr in earliestAge:lastAge) {
 # Spend from portfolio, 
     
     portfolioSpend <- min(scenarios.df$annualSpendPercent [i] * portf, portf) # spend from portfolio
-    annualSpending [i,scenarioYr - earliestAge + 1] <- round(portfolioSpend,0)
+    annualSpending [i,scenarioYr - earliestAge + 1] <- round(spend + portfolioSpend,0)
      
     if (debug == 1) print(paste("Portfolio withdrawal= ",portfolioSpend," portf = ",portf,sep=" "))
+    if (debug == 1) print(paste("Total spend this year= ",round(spend + portfolioSpend,0)," portf = ",portf,sep=" "))
 
 # 
 # Grow portfolio by market returns
@@ -162,4 +163,4 @@ write.csv(portValues,"~/desktop/Annual Portfolio Values.csv")
 write.csv(annualSpending,"~/desktop/Annual Spending.csv")
   
 if (debug == 1) print(" ")
-if (debug == 1) print(scenarios.df[20,])
+if (debug == 1) print(scenarios.df[33,])

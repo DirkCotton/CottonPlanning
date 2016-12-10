@@ -29,11 +29,11 @@ annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store 
 
 for (i in 1:scenarios) {
   
-  if(i == 33) debug <-1 else debug <- 0
+  if(i == 20) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
   
   if (debug == 1) {
     print(" ")
-    print(paste("*************** Scenario ",i,sep=" "))
+    print(paste("================== Scenario ",i,sep=" "))
     print(" ")
   }
   
@@ -44,23 +44,34 @@ for (i in 1:scenarios) {
 #
 # Subtract QLAC and Annuity costs from portfolio at beginning of scenario
 #
-  portf <- portfolio - scenarios.df$qLAC [i] - (scenarios.df$percentAnnuity [i] * portfolio)
-  if (debug == 1) print(paste("Subtract QLAC =",scenarios.df$qLAC [i],"and annuity =",scenarios.df$percentAnnuity [i] * portfolio," from portfolio. portf= ",portf,sep=" "))
+  portf <- portfolio - scenarios.df$qLAC [i]    # take out the QLAC first, then buy annuity as a percentage of remaining asvings afre QLAC purchase
+  if (debug == 1) print(paste("Subtract QLAC =",scenarios.df$qLAC [i]," portf= ",portf,sep=" "))
+  if (debug == 1) print(paste("Subtract Annuity =",scenarios.df$percentAnnuity [i] * portf," from portfolio. portf= ",portf - scenarios.df$percentAnnuity [i] * portf,sep=" "))
+  portf <- portf - (scenarios.df$percentAnnuity [i] * portf)
+  
+
   #
   # generate a random market return for each year of the scenario
   #
+  
   randomAnnualReturns <- rnorm(40,mean=scenarios.df$annualReturn [i],sd=scenarios.df$sigma50yr [i])
   if (debug == 1) {
     print(paste("expected portfolio mu= ",scenarios.df$annualReturn [i]," expected sd = ",scenarios.df$sigma50yr [i],sep=" "))
     print(paste("generated portfolio mu= ",mean(randomAnnualReturns)," generated sd = ",sd(randomAnnualReturns),sep=" "))
   }
   
-  for (scenarioYr in earliestAge:lastAge) {
+  annuityPayout <- scenarios.df$percentAnnuity[i] * (portfolio - scenarios.df$qLAC [i])  * payoutAnnuity
+  vcSSben <- scenarios.df$vcSSBenefit [i] # VC initial SS benefit
+  dcSSben <- scenarios.df$dcSSBenefit [i] # DC initial SS benefit
+
+for (scenarioYr in earliestAge:lastAge) {
+    
+    spend <- 0
     
     if (debug == 1) {
       print(" ")
       print(" ")
-      print(paste("Scenario Year ",scenarioYr,"************** ",sep=" "))
+      print(paste("Scenario ",i," Year ",scenarioYr,"************** ",sep=" "))
     }
     
 # Set Vicki and Dirk's ages
@@ -70,58 +81,66 @@ for (i in 1:scenarios) {
 
     if (debug == 1) print(paste("Dirk age ",ageDirk," Vicki Age ",ageVicki,sep=" "))
     
-# 
-# If only one spouse reduce expenses by 20%
-# 
-    annualSpend <- min(scenarios.df$annualSpendPercent [i] * portf, portf) # spend from portfolio
+#
+# Spend from Social Security benefits, QLACs, annuities when available
+#
+    
+    # 
+    # If only one spouse reduce expenses by 20%, modify SS benefits to survivor benefits
+    # 
     
     if (debug == 1) {
       print(paste("portf = ",portf,sep=" "))
       if (ageDirk == scenarios.df$maleDeathAge [i]) {
         ageDirk <- 0
         print("Male dies this year ///")
+        
+        # At Dirk's death, Vicki's SS benfit = Dirk's. Dirk's goes away
+        
+        vcSSben <- dcSSben
+        dcSSben <- 0
+        
       }
       if (ageVicki == scenarios.df$femaleDeathAge [i]) {
         ageVicki <- 0
+        vcSSben <- 0
         print("Female dies this year ///")
       }
     }
     
     if (ageDirk >= scenarios.df$maleDeathAge [i] | ageVicki >= scenarios.df$femaleDeathAge [i]) 
-    annualSpend <- .8 * annualSpend
+      annualSpend <- .8 * annualSpend
+    if (ageVicki >= scenarios.df$vcSSclaimAge [i]) {
+      spend <- spend + vcSSben # pay VC SS benefit
+      if (ageVicki == scenarios.df$vcSSclaimAge [i] & debug == 1)  print("Vicki begins SS payments ///") 
+      if (debug == 1) print(paste("Add SS Benefit VC",vcSSben," spend = ",spend,sep=" "))
+    }
+    if (ageDirk >= scenarios.df$dcSSclaimAge [i]) {
+      spend <- spend + dcSSben # pay DC SS benefit
+      if (ageDirk == scenarios.df$dcSSclaimAge [i] & debug == 1)  print("Dirk begins SS payments ///")
+      if (debug == 1) print(paste("Add SS Benefit DC",dcSSben," spend= ",spend,sep=" "))
+    }
+    
+    if (ageVicki >= ageQLAC) {
+      spend <- spend + (scenarios.df$qLAC [i] * payoutQLAC) # payout QLAC 
+      if (debug == 1) print(paste("Add QLAC payout= ",scenarios.df$qLAC [i] * payoutQLAC," spend= ",spend,sep=" "))
+    }
+    
+    if (debug == 1 & ageVicki == ageQLAC & (scenarios.df$qLAC [i] * payoutQLAC) > 0) print("Vicki's QLAC payouts begin this year ////")
+    
+    spend <- spend + annuityPayout # pay out Life Annuity
+    
+    if (debug == 1) print(paste("Add annuity payout= ",annuityPayout," spend= ",spend,sep=" "))
   
     if (ageDirk >= scenarios.df$maleDeathAge [i] & ageVicki >= scenarios.df$femaleDeathAge [i]) break # scenario ends when second spouse dies
     
 # Spend from portfolio, 
     
-    portf <- portf - annualSpend
-    annualSpending [i,scenarioYr - earliestAge + 1] <- round(annualSpend,0)
-    if (debug == 1) print(paste("Annual spend ",annualSpend," portf= ",portf,sep=" "))
-    
-# Add Social Security benefits, QLACs, annuities when available
-    
-    if (ageVicki >= scenarios.df$vcSSclaimAge [i]) {
-      portf <- portf + scenarios.df$vcSSBenefit [i] # pay VC SS benefit
-      if (ageVicki == scenarios.df$vcSSclaimAge [i] & debug == 1)  print("Vicki begins SS payments ///") 
-      if (debug == 1) print(paste("Add SS Benefit VC",scenarios.df$vcSSBenefit [i]," portf= ",portf,sep=" "))
-    }
-    if (ageDirk >= scenarios.df$dcSSclaimAge [i]) {
-      portf <- portf + scenarios.df$dcSSBenefit [i] # pay DC SS benefit
-      if (ageDirk == scenarios.df$dcSSclaimAge [i] & debug == 1)  print("Dirk begins SS payments ///")
-      if (debug == 1) print(paste("Add SS Benefit DC",scenarios.df$dcSSBenefit [i]," portf= ",portf,sep=" "))
-    }
-    
-    if (ageVicki >= ageQLAC) {
-      portf <- portf + (scenarios.df$qLAC [i] * payoutQLAC) # payout QLAC 
-      if (debug == 1) print(paste("Add QLAC payout= ",scenarios.df$qLAC [i] * payoutQLAC," portf= ",portf,sep=" "))
-    }
-    
-    if (debug == 1 & ageVicki == ageQLAC & (scenarios.df$qLAC [i] * payoutQLAC) > 0) print("Vicki's QLAC payouts begin this year ////")
-    
-    portf <- portf + scenarios.df$percentAnnuity[i] * portfolio * payoutAnnuity # pay out Life Annuity
-    
-    if (debug == 1) print(paste("Add annuity payout= ",scenarios.df$percentAnnuity[i] * portfolio * payoutAnnuity," portf= ",portf,sep=" "))
-    
+    portfolioSpend <- min(scenarios.df$annualSpendPercent [i] * portf, portf) # spend from portfolio
+    annualSpending [i,scenarioYr - earliestAge + 1] <- round(portfolioSpend,0)
+     
+    if (debug == 1) print(paste("Portfolio withdrawal= ",portfolioSpend," portf = ",portf,sep=" "))
+
 # 
 # Grow portfolio by market returns
 # 
@@ -139,6 +158,8 @@ for (i in 1:scenarios) {
   
   }
   
-  write.csv(portValues,"~/desktop/Annual Portfolio Values.csv")
-  write.csv(annualSpending,"~/desktop/Annual Spending.csv")
+write.csv(portValues,"~/desktop/Annual Portfolio Values.csv")
+write.csv(annualSpending,"~/desktop/Annual Spending.csv")
   
+if (debug == 1) print(" ")
+if (debug == 1) print(scenarios.df[20,])

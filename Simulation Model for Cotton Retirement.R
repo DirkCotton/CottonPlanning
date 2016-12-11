@@ -25,11 +25,11 @@ portValues <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all 
 annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all annual spending for a max of 40 years ending values for all scenarios
 
 
-#   scenarios <- 3  ################# DEBUG = 1
+scenarios <- 3  ################# DEBUG = 1
 
 for (i in 1:scenarios) {
   
-  if(i == 33) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
+  if(i == 3) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
   
   if (debug == 1) {
     print(" ")
@@ -65,21 +65,23 @@ for (i in 1:scenarios) {
   dcSSben <- scenarios.df$dcSSBenefit [i] # DC initial SS benefit
 
 for (scenarioYr in earliestAge:lastAge) {
-    
+  
     spend <- 0
     
+# Set Vicki and Dirk's ages
+    
+    ageVicki <- scenarioYr + 2
+    ageDirk <- scenarioYr
+    if (ageDirk >= scenarios.df$maleDeathAge [i] & ageVicki >= scenarios.df$femaleDeathAge [i]) break # scenario ends when second spouse dies
+
     if (debug == 1) {
       print(" ")
       print(" ")
       print(paste("Scenario ",i," Year ",scenarioYr,"************** ",sep=" "))
     }
     
-# Set Vicki and Dirk's ages
-    
-    ageVicki <- scenarioYr + 2
-    ageDirk <- scenarioYr
-
     if (debug == 1) print(paste("Dirk age ",ageDirk," Vicki Age ",ageVicki,sep=" "))
+    
     
 #
 # Spend from Social Security benefits, QLACs, annuities when available
@@ -132,12 +134,11 @@ for (scenarioYr in earliestAge:lastAge) {
     
     if (debug == 1) print(paste("Add annuity payout= ",annuityPayout," spend= ",spend,sep=" "))
   
-    if (ageDirk >= scenarios.df$maleDeathAge [i] & ageVicki >= scenarios.df$femaleDeathAge [i]) break # scenario ends when second spouse dies
-    
 # Spend from portfolio, 
     
     portfolioSpend <- min(scenarios.df$annualSpendPercent [i] * portf, portf) # spend from portfolio
     annualSpending [i,scenarioYr - earliestAge + 1] <- round(spend + portfolioSpend,0)
+    portf <- portf - portfolioSpend
      
     if (debug == 1) print(paste("Portfolio withdrawal= ",portfolioSpend," portf = ",portf,sep=" "))
     if (debug == 1) print(paste("Total spend this year= ",round(spend + portfolioSpend,0)," portf = ",portf,sep=" "))
@@ -163,4 +164,4 @@ write.csv(portValues,"~/desktop/Annual Portfolio Values.csv")
 write.csv(annualSpending,"~/desktop/Annual Spending.csv")
   
 if (debug == 1) print(" ")
-if (debug == 1) print(scenarios.df[33,])
+if (debug == 1) print(scenarios.df[3,])

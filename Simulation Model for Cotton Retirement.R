@@ -12,6 +12,12 @@ portf <- 0
 debug <- 0
 set.seed(27514)
 
+inflation <- .025
+muSP <- .053 + inflation # real expected return for S&P 500
+sigmaSP <- 0.16 # expected standard deviation for S&P 500
+muTIPS <- -.005 + inflation # real expected return for TIPS
+sigmaTIPS <- .05 # expected standard deviation for TIPS
+
 # 
 # Input scenarios from CSV file
 
@@ -25,11 +31,11 @@ portValues <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all 
 annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all annual spending for a max of 40 years ending values for all scenarios
 
 
-scenarios <- 3  ################# DEBUG = 1
+scenarios <- 32  ################# DEBUG = 1
 
 for (i in 1:scenarios) {
   
-  if(i == 3) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
+  if(i == 32) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
   
   if (debug == 1) {
     print(" ")
@@ -54,8 +60,13 @@ for (i in 1:scenarios) {
   # generate a random market return for each year of the scenario
   #
   
-  randomAnnualReturns <- rnorm(40,mean=scenarios.df$annualReturn [i],sd=scenarios.df$sigma50yr [i])
+  portfolioMU <- (scenarios.df$equityAlloc * muSP) + ((1 - scenarios.df$equityAlloc) * muTIPS)
+  randomEquityReturns <- rnorm(40,mean=muSP, sd=sigmaSP)
+  randomBondReturns <- rnorm(40,mean=muTIPS, sd=sigmaTIPS)
+  randomAnnualReturns <- (scenarios.df$equityAlloc * randomEquityReturns) + ((1 - scenarios.df$equityAlloc) * randomBondReturns)
+  
   if (debug == 1) {
+    print(paste("randomAnnualReturns= ",randomAnnualReturns,sep=" "))
     print(paste("expected portfolio mu= ",scenarios.df$annualReturn [i]," expected sd = ",scenarios.df$sigma50yr [i],sep=" "))
     print(paste("generated portfolio mu= ",mean(randomAnnualReturns)," generated sd = ",sd(randomAnnualReturns),sep=" "))
   }
@@ -86,10 +97,14 @@ for (scenarioYr in earliestAge:lastAge) {
 #
 # Spend from Social Security benefits, QLACs, annuities when available
 #
+#   Inflate SS benefits
+#
+    dcSSben <- dcSSben * (1 + inflation) ^ (scenarioYr - earliestAge + 1)
+    dcSSben <- dcSSben * (1 + inflation) ^ (scenarioYr - earliestAge + 1)
     
-    # 
-    # If only one spouse reduce expenses by 20%, modify SS benefits to survivor benefits
-    # 
+# 
+# modify SS benefits to survivor benefits
+# 
     
     if (debug == 1) {
       print(paste("portf = ",portf,sep=" "))
@@ -147,7 +162,7 @@ for (scenarioYr in earliestAge:lastAge) {
 # Grow portfolio by market returns
 # 
     portf <- portf * (1 + randomAnnualReturns [scenarioYr - earliestAge + 1])
-    if (debug == 1) print(paste("Portfolio earns ",randomAnnualReturns [scenarioYr - earliestAge + 1]," to ",portf,sep=" "))
+    if (debug == 1) print(paste("Portfolio earns ",randomAnnualReturns [scenarioYr - earliestAge + 1]," to ",portf," scenarioYr= ",scenarioYr, "Earliest Age= ",earliestAge, sep=" "))
     
 # End simulation at second death
     #

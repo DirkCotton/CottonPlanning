@@ -37,9 +37,9 @@ annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store 
 minSpend <- 200000  # this is the minimum acceptable annual income
 spendReduc <- .2  * minSpend
 
-# scenarios <- 1000  ################# DEBUG = 1
-debugScenario <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
-
+scenarios <- 9469  ################# DEBUG = 1
+# debugScenario <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
+debugScenario <- 9469
 if (debugScenario > 0) debug2 <- 1
 
 for (i in 1:scenarios) {
@@ -81,10 +81,12 @@ for (i in 1:scenarios) {
   annuityPayout <- scenarios.df$percentAnnuity[i] * (portfolio - scenarios.df$qLAC [i])  * payoutAnnuityPc
   vcSSben <- scenarios.df$vcSSBenefit [i] # VC initial SS benefit
   dcSSben <- scenarios.df$dcSSBenefit [i] # DC initial SS benefit
+  desiredAnnualSpending <- minSpend
 
 for (scenarioYr in earliestAge:lastAge) {
   
     spend <- 0
+    
     
 # Set Vicki and Dirk's ages
     
@@ -92,7 +94,11 @@ for (scenarioYr in earliestAge:lastAge) {
     ageDirk <- scenarioYr
     
     if (ageDirk >= scenarios.df$maleDeathAge [i] & ageVicki >= scenarios.df$femaleDeathAge [i]) break # scenario ends when second spouse dies
-
+    if (ageDirk == scenarios.df$maleDeathAge [i] | ageVicki == scenarios.df$femaleDeathAge [i]) {
+      desiredAnnualSpending <- 0.8 * desiredAnnualSpending  # annual spend decreases 20% when first spouse dies
+    if (debug == 1) print(paste("Annual spending requirement reduced from ",minSpend," to ",desiredAnnualSpending))
+    }
+    
     if (debug == 1) {
       print(" ")
       print(" ")
@@ -123,7 +129,7 @@ for (scenarioYr in earliestAge:lastAge) {
     if (ageDirk == scenarios.df$maleDeathAge [i]) {
       ageDirk <- 0
   
-      # At Dirk's death, Vicki's SS benfit = the larger benefit. Dirk's goes away
+      # At Dirk's death, Survivor's SS benefit = the larger benefit. SMaller benefit goes away.
       
       vcSSben <- max(dcSSben,vcSSben)
       dcSSben <- 0
@@ -137,11 +143,6 @@ for (scenarioYr in earliestAge:lastAge) {
       vcSSben <- 0
       dcSSben <- max(dcSSben,vcSSben)
     }
-    
-#     if (ageDirk >= scenarios.df$maleDeathAge [i] | ageVicki >= scenarios.df$femaleDeathAge [i]) {
-#       if (debug == 1) print(paste("Spending requirement reduced 20% to ",minSpend,"/////",sep=" "))
-#       minSpend <- minSpend - spendReduc
-#     }
     
     if (ageVicki >= scenarios.df$vcSSclaimAge [i] & ageVicki < scenarios.df$femaleDeathAge [i]) {
       spend <- spend + vcSSben # pay VC SS benefit
@@ -168,21 +169,20 @@ for (scenarioYr in earliestAge:lastAge) {
   
 # Spend from portfolio, 
 
-    if (spend < minSpend) portfolioSpend <- min(minSpend - spend, portf) else portfolioSpend <- 0 # spend from portfolio
-    if (debug == 1) print(paste("spend= ",spend," minSpend=",minSpend," portf=",portf,sep=" "))
-    
+    if (debug == 1) print(paste("PortfolioSpend= ",portfolioSpend, "spend ", spend," desiredAnnualSpending = ",desiredAnnualSpending," portf=",portf,sep=" "))
+    if (spend < desiredAnnualSpending) portfolioSpend <- min(desiredAnnualSpending - spend, portf) else portfolioSpend <- 0 # spend from portfolio
+   
     portf <- max(0,portf - portfolioSpend)
     annualSpending [i,scenarioYr - earliestAge + 1] <- round(spend + portfolioSpend,0)
     totalSpend <- round(spend + portfolioSpend,0)
-    excessSpend <- max(0,totalSpend - minSpend)
+    excessSpend <- max(0,totalSpend - desiredAnnualSpending)
      
     if (debug == 1) print(paste("Portfolio withdrawal= ",portfolioSpend," portf = ",portf,sep=" "))
     if (debug == 1) print(paste("Total spend this year= ",totalSpend," portf = ",portf,sep=" "))
     if (debug == 1) print(paste("Excess spend this year= ",excessSpend,sep=" "))
-    if (totalSpend < minSpend) {
+    if (totalSpend < desiredAnnualSpending) {
       if (debug == 1) print(paste ("//// Inadequate spending this year = ",scenarioYr,sep=" "))
       unmetSpending [i] <- scenarioYr
-      break
     }
 # 
 # Grow portfolio by market returns
@@ -203,6 +203,8 @@ for (scenarioYr in earliestAge:lastAge) {
     if (debug == 1) print(paste("Storing portfolio value ",portf, " in row ",i," column ",scenarioYr - earliestAge + 1,sep=" "))
     }
   
+  if (debugScenario > 0) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
+  
   }
   
 write.csv(portValues[1:scenarios,],"~/desktop/Annual Portfolio Values.csv")
@@ -216,4 +218,4 @@ if (debug2 == 1) print(cbind(scenarios.df[debugScenario,],portfolio,minSpend))
 
 if (debugScenario > 0) write.csv(cbind(scenarios.df[debugScenario,],portfolio,minSpend),"~/desktop/Test Scenario.csv")
 
-if (debugScenario > 0) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
+

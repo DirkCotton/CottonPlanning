@@ -82,7 +82,7 @@ combYrs <- (scenarios.df$maleDeathAge - 65) + (scenarios.df$femaleDeathAge - 65)
 
 
 scenarios.df <- data.frame(scenario,maleDeathAge,femaleDeathAge,equityAlloc,annualSpendPercent,percentAnnuity,annualReturn,sigma50yr,qLAC,vcSSclaimAge,vcSSBenefit,dcSSclaimAge,dcSSBenefit,annuityPayoutPc,qLACpayoutPc,inflation,combYrs)
-
+scenarios.df <- scenarios.df [1:scenarios,]
 write.csv(scenarios.df,"~/desktop/CottonScenarios.csv",row.names=FALSE)
 
 # 

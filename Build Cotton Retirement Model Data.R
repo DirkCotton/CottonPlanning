@@ -69,10 +69,22 @@ qLAC [i] <- sample(c(0,25000,50000,75000,100000,125000),1)
 vcSSclaimAge [i] <- sample(c(66,67,68,69,70),1)
 dcSSclaimAge [i] <- sample(c(65,66,67,68,69,70),1)
 
-# Calculate annual SS benefit for claiming at each age
+# Calculate annual SS benefit for claiming at each age. If death before claiming age, claiming age = FRA (66.)
 
-vcSSBenefit [i] <- vcBenefitList[vcSSclaimAge [i] - 65]
-dcSSBenefit [i] <- dcBenefitList[dcSSclaimAge [i] - 64]
+if (femaleDeathAge[i] > vcSSclaimAge [i]) modVCclaimAge <- vcSSclaimAge [i] 
+else {
+  # print(paste("Scenario ",i," Female death at ",femaleDeathAge[i]," SS Claim age at", vcSSclaimAge [i], "claim changed to 66.",sep=" "))
+  modVCclaimAge <- 66 
+}
+
+if (maleDeathAge[i] > dcSSclaimAge [i]) modDCclaimAge <- dcSSclaimAge [i] 
+else {
+  # print(paste("Scenario ",i," Male death at ",maleDeathAge[i]," SS Claim age at", dcSSclaimAge [i], "claim changed to 66.",sep=" "))
+  modDCclaimAge <- 66 
+}
+
+vcSSBenefit [i] <- vcBenefitList[modVCclaimAge - 65]
+dcSSBenefit [i] <- dcBenefitList[modDCclaimAge - 64]
 
 scenario [i] <- i
 

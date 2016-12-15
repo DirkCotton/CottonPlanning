@@ -7,6 +7,8 @@
 # Initialize variables and parameters
 
 
+library(splus2R)
+
 earliestAge <- 65 # age each scenario starts
 portfolio <- 4000000
 ageQLAC <- 85 # year QLAC begins paying, Vicki only
@@ -15,7 +17,8 @@ unmetSpending <- vector("numeric",1000)
 
 scenarioYr <- 0
 portf <- 0
-debug <- 0
+debug <- 1.0
+debugScen <- as.numeric()
 set.seed(27514)
 
 muSP <- .053 + inflation # real expected return for S&P 500
@@ -27,6 +30,7 @@ sigmaTIPS <- .05 # expected standard deviation for TIPS
 # Input scenarios from CSV file
 
 scenarios.df <- read.csv("~/desktop/CottonScenarios.csv")
+rans <- read.csv("~/R Projects/Cotton Planning/Random Returns.csv")  # input 40,000 correlated stock and bond returns (max 1,000 scenarios)
 
 # 
 # Find number of scenarios
@@ -37,14 +41,16 @@ annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store 
 minSpend <- 200000  # this is the minimum acceptable annual income
 spendReduc <- .2  * minSpend
 
-scenarios <- 9469  ################# DEBUG = 1
-# debugScenario <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
-debugScenario <- 9469
-if (debugScenario > 0) debug2 <- 1
+# debugScen <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
+debugScen <- 625 # select specific test scenario instead of random selection
+
+if (debug == 1) print(paste("Debug scenario= ",debugScen))
+
+if (debugScen > 0) debug <- 1
 
 for (i in 1:scenarios) {
   
-  if(i == debugScenario & debugScenario > 0) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
+  if(i == debugScen & debugScen > 0) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
   
   if (debug == 1) {
     print(" ")
@@ -73,9 +79,14 @@ for (i in 1:scenarios) {
   # generate a random market return for each year of the scenario
   #
   
-  portfolioMU <- (scenarios.df$equityAlloc * muSP) + ((1 - scenarios.df$equityAlloc) * muTIPS)
-  randomEquityReturns <- rnorm(40,mean=muSP, sd=sigmaSP)
-  randomBondReturns <- rnorm(40,mean=muTIPS, sd=sigmaTIPS)
+#   portfolioMU <- (scenarios.df$equityAlloc * muSP) + ((1 - scenarios.df$equityAlloc) * muTIPS)
+#   randomEquityReturns <- rnorm(40,mean=muSP, sd=sigmaSP)
+#   randomBondReturns <- rnorm(40,mean=muTIPS, sd=sigmaTIPS)
+#   randomAnnualReturns <- (scenarios.df$equityAlloc[i] * randomEquityReturns) + ((1 - scenarios.df$equityAlloc[i]) * randomBondReturns)
+#   
+
+  randomEquityReturns <- rans [(i*40 - 39):(i * 40),1]
+  randomBondReturns <- rans [(i*40 - 39):(i * 40),2]
   randomAnnualReturns <- (scenarios.df$equityAlloc[i] * randomEquityReturns) + ((1 - scenarios.df$equityAlloc[i]) * randomBondReturns)
   
   annuityPayout <- scenarios.df$percentAnnuity[i] * (portfolio - scenarios.df$qLAC [i])  * payoutAnnuityPc
@@ -126,8 +137,7 @@ for (scenarioYr in earliestAge:lastAge) {
       if (ageVicki == scenarios.df$femaleDeathAge [i]) print("Female dies this year ///")
     }
     
-    if (ageDirk == scenarios.df$maleDeathAge [i]) {
-      ageDirk <- 0
+    if (ageDirk >= scenarios.df$maleDeathAge [i]) {
   
       # At Dirk's death, Survivor's SS benefit = the larger benefit. SMaller benefit goes away.
       
@@ -135,8 +145,7 @@ for (scenarioYr in earliestAge:lastAge) {
       dcSSben <- 0
       
     }
-    if (ageVicki == scenarios.df$femaleDeathAge [i]) {
-      ageVicki <- 0
+    if (ageVicki >= scenarios.df$femaleDeathAge [i]) {
       
       # At Vicki's death, smaller SS benefit goes away
 
@@ -203,19 +212,17 @@ for (scenarioYr in earliestAge:lastAge) {
     if (debug == 1) print(paste("Storing portfolio value ",portf, " in row ",i," column ",scenarioYr - earliestAge + 1,sep=" "))
     }
   
-  if (debugScenario > 0) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
-  
+  if (debugScen > 0 & i == debugScen) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
+  if (debug == 1) print(" ")
+  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,minSpend))
   }
   
 write.csv(portValues[1:scenarios,],"~/desktop/Annual Portfolio Values.csv")
 
 write.csv(annualSpending,"~/desktop/Annual Spending.csv")
-  
-if (debug2 == 1) print(" ")
-if (debug2 == 1) print(cbind(scenarios.df[debugScenario,],portfolio,minSpend))
 
 # write test scenario data()
 
-if (debugScenario > 0) write.csv(cbind(scenarios.df[debugScenario,],portfolio,minSpend),"~/desktop/Test Scenario.csv")
+if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio,minSpend),"~/desktop/Test Scenario.csv")
 
 

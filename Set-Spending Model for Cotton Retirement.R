@@ -42,7 +42,7 @@ minSpend <- 200000  # this is the minimum acceptable annual income
 spendReduc <- .2  * minSpend
 
 # debugScen <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
-debugScen <- 625 # select specific test scenario instead of random selection
+debugScen <- 300 # select specific test scenario instead of random selection
 
 if (debug == 1) print(paste("Debug scenario= ",debugScen))
 
@@ -78,12 +78,6 @@ for (i in 1:scenarios) {
   #
   # generate a random market return for each year of the scenario
   #
-  
-#   portfolioMU <- (scenarios.df$equityAlloc * muSP) + ((1 - scenarios.df$equityAlloc) * muTIPS)
-#   randomEquityReturns <- rnorm(40,mean=muSP, sd=sigmaSP)
-#   randomBondReturns <- rnorm(40,mean=muTIPS, sd=sigmaTIPS)
-#   randomAnnualReturns <- (scenarios.df$equityAlloc[i] * randomEquityReturns) + ((1 - scenarios.df$equityAlloc[i]) * randomBondReturns)
-#   
 
   randomEquityReturns <- rans [(i*40 - 39):(i * 40),1]
   randomBondReturns <- rans [(i*40 - 39):(i * 40),2]
@@ -212,9 +206,11 @@ for (scenarioYr in earliestAge:lastAge) {
     if (debug == 1) print(paste("Storing portfolio value ",portf, " in row ",i," column ",scenarioYr - earliestAge + 1,sep=" "))
     }
   
+  scenarios.df$tpv [i] <- portf # save terminal portfolio value
   if (debugScen > 0 & i == debugScen) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
   if (debug == 1) print(" ")
-  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,minSpend))
+  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,minSpend,unmetSpending [i],scenarios.df$tpv[i]))
+ 
   }
   
 write.csv(portValues[1:scenarios,],"~/desktop/Annual Portfolio Values.csv")
@@ -223,6 +219,7 @@ write.csv(annualSpending,"~/desktop/Annual Spending.csv")
 
 # write test scenario data()
 
-if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio,minSpend),"~/desktop/Test Scenario.csv")
 
+if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio,minSpend,unmetSpending[debugScen],tpv[debugScen]),"~/desktop/Test Scenario.csv")
 
+print(paste("Unmet spending scenarios=",sum(unmetSpending > 0)/scenarios * 100,"%",sep=" "))

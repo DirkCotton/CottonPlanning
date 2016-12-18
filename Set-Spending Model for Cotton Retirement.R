@@ -12,6 +12,7 @@ library(splus2R)
 earliestAge <- 65 # age each scenario starts
 portfolio <- 4000000
 ageQLAC <- 85 # year QLAC begins paying, Vicki only
+survivorBenefit <- .75  # 75% survivors benefit on annuity
 
 unmetSpending <- vector("numeric",1000)
 
@@ -41,8 +42,11 @@ annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store 
 minSpend <- 200000  # this is the minimum acceptable annual income
 spendReduc <- .2  * minSpend
 
+#----------------------------------------------------------------------------------------
 # debugScen <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
-debugScen <- 300 # select specific test scenario instead of random selection
+debugScen <- 0 # select specific test scenario instead of random selection
+scenarios <- scenarios # set to debugScen to end at debug scenario
+#----------------------------------------------------------------------------------------
 
 if (debug == 1) print(paste("Debug scenario= ",debugScen))
 
@@ -82,6 +86,8 @@ for (i in 1:scenarios) {
   randomEquityReturns <- rans [(i*40 - 39):(i * 40),1]
   randomBondReturns <- rans [(i*40 - 39):(i * 40),2]
   randomAnnualReturns <- (scenarios.df$equityAlloc[i] * randomEquityReturns) + ((1 - scenarios.df$equityAlloc[i]) * randomBondReturns)
+  
+  scenarios.df$geoMean[i] <- geometric.mean(randomAnnualReturns + 1)  - 1
   
   annuityPayout <- scenarios.df$percentAnnuity[i] * (portfolio - scenarios.df$qLAC [i])  * payoutAnnuityPc
   vcSSben <- scenarios.df$vcSSBenefit [i] # VC initial SS benefit
@@ -166,7 +172,10 @@ for (scenarioYr in earliestAge:lastAge) {
     
     if (debug == 1 & ageVicki == ageQLAC & (scenarios.df$qLAC [i] * payoutQLAC) > 0) print("Vicki's QLAC payouts begin this year ////")
     
-    spend <- spend + annuityPayout  # pay out Life Annuity
+    # pay out Life Annuity
+    
+    if (ageVicki >= scenarios.df$femaleDeathAge [i] | ageDirk >= scenarios.df$maleDeathAge [i]) annuityPayout <- annuityPayout * survivorBenefit
+    spend <- spend + annuityPayout  
     
     if (debug == 1) print(paste("Add annuity payout= ",annuityPayout," spend= ",spend,sep=" "))
   
@@ -185,7 +194,7 @@ for (scenarioYr in earliestAge:lastAge) {
     if (debug == 1) print(paste("Excess spend this year= ",excessSpend,sep=" "))
     if (totalSpend < desiredAnnualSpending) {
       if (debug == 1) print(paste ("//// Inadequate spending this year = ",scenarioYr,sep=" "))
-      unmetSpending [i] <- scenarioYr
+      scenarios.df$unmetSpend [i] <- scenarioYr
     }
 # 
 # Grow portfolio by market returns
@@ -209,7 +218,7 @@ for (scenarioYr in earliestAge:lastAge) {
   scenarios.df$tpv [i] <- portf # save terminal portfolio value
   if (debugScen > 0 & i == debugScen) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
   if (debug == 1) print(" ")
-  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,minSpend,unmetSpending [i],scenarios.df$tpv[i]))
+  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,minSpend,scenarios.df$unmetSpend [i],scenarios.df$tpv[i]))
  
   }
   
@@ -220,6 +229,13 @@ write.csv(annualSpending,"~/desktop/Annual Spending.csv")
 # write test scenario data()
 
 
-if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio,minSpend,unmetSpending[debugScen],tpv[debugScen]),"~/desktop/Test Scenario.csv")
+if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio,minSpend),"~/desktop/Test Scenario.csv")
 
-print(paste("Unmet spending scenarios=",sum(unmetSpending > 0)/scenarios * 100,"%",sep=" "))
+print(paste("Unmet spending scenarios=",sum(scenarios.df$unmetSpend > 0)/scenarios * 100,"%",sep=" "))
+
+if (sum(scenarios.df$unmetSpend > 0)) {
+  print("Unmet Spending Scenarios")
+  print(scenarios.df$scenario[scenarios.df$unmetSpend > 0])
+}
+
+

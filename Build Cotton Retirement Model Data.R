@@ -23,6 +23,7 @@ equityAlloc <- vector(length=scenarios)
 annualReturn <- vector(length=scenarios)
 annuityPayoutPc <- vector(length=scenarios)
 qLACpayoutPc <- vector(length=scenarios)
+geoMean <- vector(length=scenarios)
 inflation <- vector(length=scenarios)
 combYrs <- vector(length=scenarios) # combined male and female retierment years calculated in next step
 unmetSpend <- vector(length=scenarios) # blank field. unmet spending year will be stored here in next step
@@ -58,7 +59,7 @@ annualReturn [i] <- rnorm(1,mean=return50yr [equityAlloc[i] * 10], sd=sigma50yrs
 sigma50yr [i] <- sigma50yrs [equityAlloc[i] * 10]
 
 # Generate uniform random % of annuity from 0 to 100% of max available in 10% increments.
-percentAnnuity [i] <- sample(c(.1,.2,.3,.4,.5,.6,.7,.8,.9,1),1)
+percentAnnuity [i] <- sample(c(.1,.2,.3,.4,.5,.6,.7,.8),1)
 
 # Assume a spending percentage between 3% and 5% in 0.5% increments
 annualSpendPercent [i] <- sample(c(.03,.035,.04,.045,.05,.055),1)
@@ -95,7 +96,7 @@ scenario [i] <- i
 combYrs <- (scenarios.df$maleDeathAge - 65) + (scenarios.df$femaleDeathAge - 65)
 
 
-scenarios.df <- data.frame(scenario,maleDeathAge,femaleDeathAge,equityAlloc,annualSpendPercent,percentAnnuity,annualReturn,sigma50yr,qLAC,vcSSclaimAge,vcSSBenefit,dcSSclaimAge,dcSSBenefit,annuityPayoutPc,qLACpayoutPc,inflation,combYrs,unmetSpend,tpv)
+scenarios.df <- data.frame(scenario,maleDeathAge,femaleDeathAge,equityAlloc,annualSpendPercent,percentAnnuity,annualReturn,sigma50yr,qLAC,vcSSclaimAge,vcSSBenefit,dcSSclaimAge,dcSSBenefit,annuityPayoutPc,qLACpayoutPc,inflation,combYrs,unmetSpend,tpv,geoMean)
 scenarios.df <- scenarios.df [1:scenarios,]
 write.csv(scenarios.df,"~/desktop/CottonScenarios.csv",row.names=FALSE)
 

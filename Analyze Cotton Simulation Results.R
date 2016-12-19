@@ -4,13 +4,35 @@ hist(scenarios.df$tpv[which(scenarios.df$tpv<10000000)],breaks=seq(0,10000000,by
 
 print(paste("Mean TPV ",round(mean(scenarios.df$tpv),0),sep=" "))
 print(paste("Median TPV ",round(median(scenarios.df$tpv),0),sep=" "))
+q <- quantile(scenarios.df$tpv)
+q2 <- q[2]
+q3 <- q[3]
+q4 <- q[4]
+
 print(paste("Quartiles ",quantile(scenarios.df$tpv),sep=" "))
 
-print(mean(scenarios.df$tpv[which(scenarios.df$tpv< 2478754)]))
-print(mean(scenarios.df$tpv[which(scenarios.df$tpv>= 2478754 & scenarios.df$tpv< 3778116)]))
-print(mean(scenarios.df$tpv[which(scenarios.df$tpv>- 3778116 & scenarios.df$tpv< 6069686)]))
-print(mean(scenarios.df$tpv[which(scenarios.df$tpv> 6069686)]))
-      
+print(" ")
+print("Mean TPVs for Quartiles 1-4")
+print(mean(scenarios.df$tpv[which(scenarios.df$tpv< q2)]))
+print(mean(scenarios.df$tpv[which(scenarios.df$tpv>= q2 & scenarios.df$tpv< q3)]))
+print(mean(scenarios.df$tpv[which(scenarios.df$tpv>= q3 & scenarios.df$tpv< q4)]))
+print(mean(scenarios.df$tpv[which(scenarios.df$tpv> q4)]))
+
+print(" ")
+print("Summary Combined years or retirement for Quartiles 1-4")
+print(summary(scenarios.df$combYrs[which(scenarios.df$tpv< q2)]))
+print(summary(scenarios.df$combYrs[which(scenarios.df$tpv>= q2 & scenarios.df$tpv< q3)]))
+print(summary(scenarios.df$combYrs[which(scenarios.df$tpv>= q3 & scenarios.df$tpv< q4)]))
+print(summary(scenarios.df$combYrs[which(scenarios.df$tpv> q4)]))
+
+# Print TPV by quartile
+#
+print(" ")
+print("Unmet Spending Scenarios for Quartiles 1-4")
+print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0 & scenarios.df$tpv < q2)])
+print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0 &scenarios.df$tpv >= q2 & scenarios.df$tpv < q3)])
+print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0 &scenarios.df$tpv >= q3 & scenarios.df$tpv < q4)])
+print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0 &scenarios.df$tpv > q4)])
 
 # Multiple Linear Regression Example
 fit <- lm(scenarios.df$tpv ~ scenarios.df$combYrs + scenarios.df$geoMean + scenarios.df$percentAnnuity, data=scenarios.df)
@@ -18,7 +40,7 @@ summary(fit) # show results
 
 # Calculate Relative Importance for Each Predictor
 library(relaimpo)
-calc.relimp(fit,type=c("lmg"),
+calc.relimp(fit,type=c("lmg","last","first","pratt"),
             rela=TRUE)
 
 # Bootstrap Measures of Relative Importance (1000 samples)

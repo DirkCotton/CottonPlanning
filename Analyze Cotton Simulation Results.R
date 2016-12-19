@@ -3,7 +3,7 @@
 hist(scenarios.df$tpv[which(scenarios.df$tpv<10000000)],breaks=seq(0,10000000,by=100000), main="Histogram of Terminal Portfolio Values")
 
 print(paste("Mean TPV ",round(mean(scenarios.df$tpv),0),sep=" "))
-print(paste("Median TPV ",round(median(scenarios.df$tpv),0),sep=" "))
+print(paste("Median TPV ",round(median(scenarios.df$tpv),0),sep=" ")) #
 q <- quantile(scenarios.df$tpv)
 q2 <- q[2]
 q3 <- q[3]

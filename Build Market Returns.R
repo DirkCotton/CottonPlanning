@@ -7,7 +7,7 @@ sigmaSP <- 0.16 # expected standard deviation for S&P 500
 muTIPS <- -.005 + inflation # real expected return for TIPS
 sigmaTIPS <- .05 # expected standard deviation for TIPS
 sdVector <- c(sigmaSP,sigmaTIPS)
-b= matrix(c(1,.11,.11,1),nrow=2, ncol=2) 
+b= matrix(c(1,.11,.11,1),nrow=2, ncol=2)    
 
 rans <- rmvnorm(40000, mean=c(muSP,muTIPS), cov=b,sd=sdVector,d= 2)
 

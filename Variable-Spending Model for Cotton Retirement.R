@@ -14,7 +14,7 @@ portfolio <- 4000000
 ageQLAC <- 85 # year QLAC begins paying, Vicki only
 survivorBenefit <- .75  # 75% survivors benefit on annuity
 
-unmetSpending <- vector("numeric",1000)
+# unmetSpending <- vector("numeric",1000) No longer needed?
 
 scenarioYr <- 0
 portf <- 0
@@ -39,12 +39,12 @@ rans <- read.csv("~/R Projects/Cotton Planning/Random Returns.csv")  # input 40,
 scenarios <- length(scenarios.df$scenario)
 portValues <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all annual portfolios for a max of 40 years ending values for all scenarios
 annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all annual spending for a max of 40 years ending values for all scenarios
-minSpend <- 200000  # this is the minimum acceptable annual income
-spendReduc <- .2  * minSpend
+scenarios.df$minSpend <- 200000  # this is the minimum acceptable annual income
+spendReduc <- .2  * scenarios.df$minSpend
 
 #----------------------------------------------------------------------------------------
 # debugScen <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
-debugScen <- 100 # select specific test scenario instead of random selection
+debugScen <- 41 # select specific test scenario instead of random selection
 scenarios <- scenarios # set to debugScen to end at debug scenario
 #----------------------------------------------------------------------------------------
 
@@ -92,10 +92,13 @@ for (i in 1:scenarios) {
   annuityPayout <- scenarios.df$percentAnnuity[i] * (portfolio - scenarios.df$qLAC [i])  * payoutAnnuityPc
   vcSSben <- scenarios.df$vcSSBenefit [i] # VC initial SS benefit
   dcSSben <- scenarios.df$dcSSBenefit [i] # DC initial SS benefit
- # desiredAnnualSpending <- scenarios.df$annualSpendPercent [i] * portfolio
-  desiredAnnualSpending <- 200000
-  minSpend= desiredAnnualSpending
-
+  
+  desiredAnnualSpending <- scenarios.df$annualSpendPercent [i] * portfolio
+ #  desiredAnnualSpending <- 200000
+  
+ scenarios.df$minSpend [i] <- desiredAnnualSpending
+  scenarios.df$unmetSpend <- 0
+ 
 for (scenarioYr in earliestAge:lastAge) {
   
     spend <- 0
@@ -109,7 +112,7 @@ for (scenarioYr in earliestAge:lastAge) {
     if (ageDirk >= scenarios.df$maleDeathAge [i] & ageVicki >= scenarios.df$femaleDeathAge [i]) break # scenario ends when second spouse dies
     if (ageDirk == scenarios.df$maleDeathAge [i] | ageVicki == scenarios.df$femaleDeathAge [i]) {
       desiredAnnualSpending <- 0.8 * desiredAnnualSpending  # annual spend decreases 20% when first spouse dies
-    if (debug == 1) print(paste("Annual spending requirement reduced from ",minSpend," to ",desiredAnnualSpending))
+    if (debug == 1) print(paste("Annual spending requirement reduced from ",scenarios.df$minSpend [i]," to ",desiredAnnualSpending))
     }
     
     if (debug == 1) {
@@ -152,7 +155,7 @@ for (scenarioYr in earliestAge:lastAge) {
       # At Vicki's death, smaller SS benefit goes away
 
       vcSSben <- 0
-      dcSSben <- max(dcSSben,vcSSben)
+      dcSSben <- max(dcSSben,vcSSben)  #  
     }
     
     if (ageVicki >= scenarios.df$vcSSclaimAge [i] & ageVicki < scenarios.df$femaleDeathAge [i]) {
@@ -220,7 +223,7 @@ for (scenarioYr in earliestAge:lastAge) {
   scenarios.df$tpv [i] <- portf # save terminal portfolio value
   if (debugScen > 0 & i == debugScen) write.csv(randomAnnualReturns,"~/desktop/Test Scenario Returns.csv")
   if (debug == 1) print(" ")
-  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,minSpend,scenarios.df$unmetSpend [i],scenarios.df$tpv[i]))
+  if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,scenarios.df$unmetSpend [debugScen],scenarios.df$tpv[debugScen]))
  
   }
   
@@ -231,13 +234,13 @@ write.csv(annualSpending,"~/desktop/Annual Spending.csv")
 # write test scenario data()
 
 
-if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio, desiredAnnualSpending),"~/desktop/Test Scenario.csv")
+if (debugScen > 0) write.csv(cbind(scenarios.df[debugScen,],portfolio),"~/desktop/Test Scenario.csv")
 
 print(paste("Unmet spending scenarios=",sum(scenarios.df$unmetSpend > 0)/scenarios * 100,"%",sep=" "))
 
 if (sum(scenarios.df$unmetSpend > 0)) {
   print("Unmet Spending Scenarios")
-  print(scenarios.df$scenario[scenarios.df$unmetSpend > 0])
+  print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0)])
 }
 
 

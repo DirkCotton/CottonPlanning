@@ -28,6 +28,7 @@ inflation <- vector(length=scenarios)
 combYrs <- vector(length=scenarios) # combined male and female retierment years calculated in next step
 unmetSpend <- vector(length=scenarios) # blank field. unmet spending year will be stored here in next step
 tpv <- vector(length=scenarios) # blank field. terminal portfolio value will be stored here in next step
+minSpend <- vector(length=scenarios) # blank field. minimum annual spend value will be stored here in next step
 
 annuityPayoutPc <- .05 # annuity payout %
 qLACpayoutPc <- .05 # QLAC payout %
@@ -96,7 +97,7 @@ scenario [i] <- i
 combYrs <- (scenarios.df$maleDeathAge - 65) + (scenarios.df$femaleDeathAge - 65)
 
 
-scenarios.df <- data.frame(scenario,maleDeathAge,femaleDeathAge,equityAlloc,annualSpendPercent,percentAnnuity,annualReturn,sigma50yr,qLAC,vcSSclaimAge,vcSSBenefit,dcSSclaimAge,dcSSBenefit,annuityPayoutPc,qLACpayoutPc,inflation,combYrs,unmetSpend,tpv,geoMean)
+scenarios.df <- data.frame(scenario,maleDeathAge,femaleDeathAge,equityAlloc,annualSpendPercent,percentAnnuity,annualReturn,sigma50yr,qLAC,vcSSclaimAge,vcSSBenefit,dcSSclaimAge,dcSSBenefit,annuityPayoutPc,qLACpayoutPc,inflation,combYrs,unmetSpend,tpv,geoMean,minSpend)
 scenarios.df <- scenarios.df [1:scenarios,]
 write.csv(scenarios.df,"~/desktop/CottonScenarios.csv",row.names=FALSE)
 

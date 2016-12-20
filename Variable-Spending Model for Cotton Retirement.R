@@ -39,12 +39,12 @@ rans <- read.csv("~/R Projects/Cotton Planning/Random Returns.csv")  # input 40,
 scenarios <- length(scenarios.df$scenario)
 portValues <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all annual portfolios for a max of 40 years ending values for all scenarios
 annualSpending <- matrix (0,nrow=scenarios,ncol=40)  # create a matrix to store all annual spending for a max of 40 years ending values for all scenarios
-scenarios.df$minSpend <- 200000  # this is the minimum acceptable annual income
 spendReduc <- .2  * scenarios.df$minSpend
+scenarios.df$unmetSpend <- 0
 
 #----------------------------------------------------------------------------------------
 # debugScen <- sample(1:scenarios,1)  # save and print data for this scenario unless negative
-debugScen <- 41 # select specific test scenario instead of random selection
+debugScen <- 0 # select specific test scenario instead of random selection
 scenarios <- scenarios # set to debugScen to end at debug scenario
 #----------------------------------------------------------------------------------------
 
@@ -93,11 +93,15 @@ for (i in 1:scenarios) {
   vcSSben <- scenarios.df$vcSSBenefit [i] # VC initial SS benefit
   dcSSben <- scenarios.df$dcSSBenefit [i] # DC initial SS benefit
   
-  desiredAnnualSpending <- scenarios.df$annualSpendPercent [i] * portfolio
- #  desiredAnnualSpending <- 200000
+  desiredAnnualSpending <- 260000 # set fixed annnual desired spending . . . or
+  #  scenarios.df$annualSpendPercent [i] * portfolio   # use variable spending amount (One of these lines should be commented out)
   
- scenarios.df$minSpend [i] <- desiredAnnualSpending
-  scenarios.df$unmetSpend <- 0
+  
+  scenarios.df$minSpend [i] <- desiredAnnualSpending
+ #  desiredAnnualSpending <- 200000
+ 
+#  print(paste("---------- minSpend and desired annual spending = ",i,scenarios.df$minSpend[i],desiredAnnualSpending,sep=" "))
+  
  
 for (scenarioYr in earliestAge:lastAge) {
   
@@ -225,6 +229,9 @@ for (scenarioYr in earliestAge:lastAge) {
   if (debug == 1) print(" ")
   if (debug == 1) print(cbind(scenarios.df[debugScen,],portfolio,scenarios.df$unmetSpend [debugScen],scenarios.df$tpv[debugScen]))
  
+  
+  # scenarios.df$minSpend [i] <- desiredAnnualSpending
+  
   }
   
 write.csv(portValues[1:scenarios,],"~/desktop/Annual Portfolio Values.csv")

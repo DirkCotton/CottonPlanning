@@ -35,7 +35,15 @@ print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0 &scenarios.df$tpv 
 print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0 &scenarios.df$tpv > q4)])
 
 # Multiple Linear Regression Example
-fit <- lm(scenarios.df$tpv ~ scenarios.df$combYrs + scenarios.df$geoMean + scenarios.df$percentAnnuity, data=scenarios.df)
+
+scenariosdata <- scenarios.df # [which(scenarios.df$percentAnnuity == .8),]
+
+Y <- scenarios.df$combYrs
+G <- scenarios.df$geoMean
+W <- scenarios.df$annualSpendPercent
+A <- scenarios.df$percentAnnuity
+  fit <- lm(scenarios.df$unmetSpend ~ Y + G + W + A, data=scenariosdata)
+# fit <- lm(scenarios.df$unmetSpend ~ Y + W + A, data=scenariosdata)
 summary(fit) # show results
 
 # Calculate Relative Importance for Each Predictor

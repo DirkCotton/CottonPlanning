@@ -2,19 +2,21 @@
 
 # This is a second  version of the model that sets minimum acceptable annual income instead of using spending a safe 
 # withdrawal rate. It doesn't need to track portfolio depletion because there are othe income sources (annuity, Social Security, etc.).
-# It does, however, track and flag inadequate income in any year and stops ythe simnulations as "failed" at that point.
+# It does, however, track and flag inadequate income in any year and stops the simnulations as "failed" at that point.
 # 
-# Initialize variables and parameters
 
+
+#-------------------------------------------------------------------------------------
+# Initialize variables and parameters, install libraries
+#-------------------------------------------------------------------------------------
 
 library(splus2R)
+library(psych)
 
 earliestAge <- 65 # age each scenario starts
 portfolio <- 4000000
 ageQLAC <- 85 # year QLAC begins paying, Vicki only
 survivorBenefit <- .75  # 75% survivors benefit on annuity
-
-# unmetSpending <- vector("numeric",1000) No longer needed?
 
 scenarioYr <- 0
 portf <- 0
@@ -27,13 +29,13 @@ sigmaSP <- 0.16 # expected standard deviation for S&P 500
 muTIPS <- -.005 + inflation # real expected return for TIPS
 sigmaTIPS <- .05 # expected standard deviation for TIPS
 
-# 
-# Input scenarios from CSV file
+
+# Input scenarios from CSV file and input random market returns file 
+# calculate max number of years in this scenario from length of scenario input file
 
 scenarios.df <- read.csv("~/desktop/CottonScenarios.csv")
 rans <- read.csv("~/R Projects/Cotton Planning/Random Returns.csv")  # input 40,000 correlated stock and bond returns (max 1,000 scenarios)
 
-# 
 # Find number of scenarios
 
 scenarios <- length(scenarios.df$scenario)
@@ -52,6 +54,10 @@ if (debug == 1) print(paste("Debug scenario= ",debugScen))
 
 if (debugScen > 0) debug <- 1
 
+#-------------------------------------------------------------------------------------
+# Being outside loop for scenarios.
+#-------------------------------------------------------------------------------------
+
 for (i in 1:scenarios) {
   
   if(i == debugScen & debugScen > 0) debug <-1 else debug <- 0 # set i= a negative number or a single specific scenario number to print output for
@@ -62,34 +68,36 @@ for (i in 1:scenarios) {
     print(" ")
   }
   
-# calculate max number of years in this scenario
-  
-  lastAge <- max(scenarios.df$femaleDeathAge [i],scenarios.df$maleDeathAge [i])
-  
+  lastAge <- max(scenarios.df$femaleDeathAge [i],scenarios.df$maleDeathAge [i]) # find max of female and male ages in all scenarios
   inflation <- scenarios.df$inflation [i]
   payoutQLAC <- scenarios.df$qLACpayoutPc [i]
   payoutAnnuityPc <- scenarios.df$annuityPayoutPc [i]
   
-#
+#-------------------------------------------------------------------------------------
 # Subtract QLAC and Annuity costs from portfolio at beginning of scenario
-#
+#-------------------------------------------------------------------------------------
+  
   portf <- portfolio - scenarios.df$qLAC [i]    # take out the QLAC first, then buy annuity as a percentage of remaining asvings afre QLAC purchase
   if (debug == 1) print(paste("Subtract QLAC =",scenarios.df$qLAC [i]," portf= ",portf,sep=" "))
   if (debug == 1) print(paste("Subtract Annuity =",scenarios.df$percentAnnuity [i] * portf," from portfolio. portf= ",portf - scenarios.df$percentAnnuity [i] * portf,sep=" "))
   portf <- portf - (scenarios.df$percentAnnuity [i] * portf)
   
-
-  #
-  # generate a random market return for each year of the scenario
-  #
-
+#-------------------------------------------------------------------------------------
+# Iput a random market return for each year of the scenario for market returns file. 
+# Read the next 40 market returns at the beginning of each scenario.
+#-------------------------------------------------------------------------------------
   randomEquityReturns <- rans [(i*40 - 39):(i * 40),1]
   randomBondReturns <- rans [(i*40 - 39):(i * 40),2]
   randomAnnualReturns <- (scenarios.df$equityAlloc[i] * randomEquityReturns) + ((1 - scenarios.df$equityAlloc[i]) * randomBondReturns)
   
-  scenarios.df$geoMean[i] <- geometric.mean(randomAnnualReturns + 1)  - 1
+  scenarios.df$geoMean[i] <- geometric.mean(randomAnnualReturns + 1)  - 1 # calculate geometric mean market retun and store in data.frame by scenario
   
   annuityPayout <- scenarios.df$percentAnnuity[i] * (portfolio - scenarios.df$qLAC [i])  * payoutAnnuityPc
+  
+  #-------------------------------------------------------------------------------------
+  # Determine inital and all subsequent Social Security Retirment benefit payments.
+  #-------------------------------------------------------------------------------------
+  
   vcSSben <- scenarios.df$vcSSBenefit [i] # VC initial SS benefit
   dcSSben <- scenarios.df$dcSSBenefit [i] # DC initial SS benefit
   
@@ -101,8 +109,11 @@ for (i in 1:scenarios) {
  #  desiredAnnualSpending <- 200000
  
 #  print(paste("---------- minSpend and desired annual spending = ",i,scenarios.df$minSpend[i],desiredAnnualSpending,sep=" "))
+
+#-------------------------------------------------------------------------------------
+# Beginning of inner loop of years of this scenario.
+#-------------------------------------------------------------------------------------
   
- 
 for (scenarioYr in earliestAge:lastAge) {
   
     spend <- 0
@@ -148,7 +159,7 @@ for (scenarioYr in earliestAge:lastAge) {
     
     if (ageDirk >= scenarios.df$maleDeathAge [i]) {
   
-      # At Dirk's death, Survivor's SS benefit = the larger benefit. SMaller benefit goes away.
+# At Dirk's death, Survivor's SS benefit = the larger benefit. SMaller benefit goes away.
       
       vcSSben <- max(dcSSben,vcSSben)
       dcSSben <- 0
@@ -156,7 +167,7 @@ for (scenarioYr in earliestAge:lastAge) {
     }
     if (ageVicki >= scenarios.df$femaleDeathAge [i]) {
       
-      # At Vicki's death, smaller SS benefit goes away
+# At Vicki's death, smaller SS benefit goes away
 
       vcSSben <- 0
       dcSSben <- max(dcSSben,vcSSben)  #  
@@ -180,15 +191,16 @@ for (scenarioYr in earliestAge:lastAge) {
     }
     
     if (debug == 1 & ageVicki == ageQLAC & (scenarios.df$qLAC [i] * payoutQLAC) > 0) print("Vicki's QLAC payouts begin this year ////")
-    
-    # pay out Life Annuity
-    
+#-------------------------------------------------------------------------------------    
+# pay out Life Annuity
+#------------------------------------------------------------------------------------- 
     if (ageVicki == scenarios.df$femaleDeathAge [i] | ageDirk == scenarios.df$maleDeathAge [i]) annuityPayout <- annuityPayout * survivorBenefit
     spend <- spend + annuityPayout  
     
     if (debug == 1) print(paste("Add annuity payout= ",annuityPayout," spend= ",spend,sep=" "))
-  
-# Spend from portfolio, 
+#-------------------------------------------------------------------------------------  
+# Spend from portfolio.
+#-------------------------------------------------------------------------------------
 
     if (debug == 1) print(paste("PortfolioSpend= ",portfolioSpend, "spend ", spend," desiredAnnualSpending = ",desiredAnnualSpending," portf=",portf,sep=" "))
     if (spend < desiredAnnualSpending) portfolioSpend <- min(desiredAnnualSpending - spend, portf) else portfolioSpend <- 0 # spend from portfolio
@@ -205,10 +217,11 @@ for (scenarioYr in earliestAge:lastAge) {
       if (debug == 1) print(paste ("//// Inadequate spending this year = ",scenarioYr,sep=" "))
       scenarios.df$unmetSpend [i] <- scenarioYr
     }
-# 
+#------------------------------------------------------------------------------------- 
 # Grow portfolio by market returns
-# 
-    if (excessSpend > 0) {
+#------------------------------------------------------------------------------------- 
+   
+     if (excessSpend > 0) {
       if (debug == 1) print(paste("Increase portf from ",portf," to ", portf + excessSpend ,sep=" "))
       portf <- portf + excessSpend
     }
@@ -216,9 +229,10 @@ for (scenarioYr in earliestAge:lastAge) {
     if (debug == 1) print(paste("Portfolio earns ",randomAnnualReturns [scenarioYr - earliestAge + 1]," to ",portf," scenarioYr= ",scenarioYr, "Earliest Age= ",earliestAge, sep=" "))
     
 # End simulation at second death
-    #
-    # Record results in file
-    #
+
+#
+# Record results in file
+#
 
     portValues[i,scenarioYr - earliestAge + 1] <- round(portf,0)
     if (debug == 1) print(paste("Storing portfolio value ",portf, " in row ",i," column ",scenarioYr - earliestAge + 1,sep=" "))
@@ -231,6 +245,10 @@ for (scenarioYr in earliestAge:lastAge) {
  
   
   # scenarios.df$minSpend [i] <- desiredAnnualSpending
+  
+#-------------------------------------------------------------------------------------
+# End of inner loop of years of this scenario
+#-------------------------------------------------------------------------------------
   
   }
   
@@ -248,6 +266,11 @@ print(paste("Unmet spending scenarios=",sum(scenarios.df$unmetSpend > 0)/scenari
 if (sum(scenarios.df$unmetSpend > 0)) {
   print("Unmet Spending Scenarios")
   print(scenarios.df$scenario[which(scenarios.df$unmetSpend > 0)])
+  
+  #-------------------------------------------------------------------------------------
+  # End of outer loop of scenarios
+  #-------------------------------------------------------------------------------------
+  
 }
 
 
